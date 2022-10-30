@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>peerjs</title>
+</head>
+<body>
+  <p>From server</p>
+  <video id="remoteVideo" autoplay playsinline width="240" height="240"></video>
+  <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
+
+  <script type="text/javascript">
+    let receiverid = '';
+
+    const peer = new Peer();
+    console.log('[peer]:',peer);
+
+    peer.on('open', (id) => {
+      console.log('[My peer id is]:', id);
+      
+    })
+
+    function connect (id) {
+      receiverid = id;
+      const conn = peer.connect(id);
+      conn.on('open', ()=>{
+        conn.send('hi!');
+      })
+    }
+    const getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia;
+    
+    function stream () {
+      getUserMedia({video: true, audio: false}, (stream) => {
+        const call = peer.call(receiverid, stream);
+        console.log('[call]:', call);
+        call.on('stream', (remoteStream)=> {
+          remoteVideo.srcObject = remoteStream
+        })
+      }, (err) => {
+        console.log('[Failed to get localstrean]:',err);
+        
+      })
+    }
+    
+
+    // const conn = peer.connect('another-peers-id');
+    // // on open will be launch when you successfully connect to PeerServer
+    // conn.on('open', function(){
+    //   // here you have conn.id
+    //   conn.send('hi!');
+    // });
+    
+  </script>
+</body>
+</html>
