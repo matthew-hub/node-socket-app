@@ -16,8 +16,18 @@
 
   <script type="text/javascript">
     const getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia;
+    const constraints = {
+      video: {
+        width: { min: 240, ideal: 320 },
+        height: { min: 200, ideal: 240 },
+        aspectRatio: { ideal: 1.7777777778 },
+        facingMode: 'environment',
+      },
+      audio: false
+    };
+
     const peer = new Peer(null, {debug: 2 });
-  
+    let conn = null;
     let receiverid = '';
     let lastPeerId = null;
 
@@ -30,6 +40,20 @@
       }
       console.log('ID: ' + peer.id);
     })
+
+    peer.on('connection', function (c) {
+      // Disallow incoming connections
+      c.on('open', function() {
+          c.send("Sender does not accept incoming connections");
+          setTimeout(function() { c.close(); }, 500);
+      });
+    });
+
+    peer.on('close', function() {
+        conn = null;
+        status.innerHTML = "Connection destroyed. Please refresh";
+        console.log('Connection destroyed');
+    });
     peer.on('disconnected', function () {
         console.log('Connection lost. Please reconnect');
 
@@ -39,14 +63,19 @@
         peer.reconnect();
     });
 
-    async function  connect (id) {
+    const connect = async (id) => {
       receiverid = id;
-      const conn = await peer.connect(id);
+      conn = await peer.connect(id); 
       conn.on('open', ()=>{
         conn.send('hi!');
-      });
+      })
+     
+      conn.on('data', (data) =>{
+        console.log('[data]:',data);
+        
+      })
 
-      getUserMedia({video: true, audio: false}, (stream) => {
+      getUserMedia( constraints, (stream) => {
         const call = peer.call(receiverid, stream);
         console.log('[call]:', call);
         call.on('stream', (remoteStream)=> {
@@ -57,6 +86,7 @@
         
       })
     }
+
     
   </script>
 
