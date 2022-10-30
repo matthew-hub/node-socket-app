@@ -15,6 +15,7 @@
 
   <script type="text/javascript">
     const peer = new Peer();
+    let conn = null;
     let lastPeerId = null;
     
     console.log('[peer]:',peer);
@@ -30,14 +31,33 @@
       console.log('ID: ' + peer.id);
       receiverDoc.set({pid: id})
     })
-    peer.on('connection', (conn) => { 
-      console.log('[connection]:',conn);
-      conn.on('data', (data) => {
-        console.log('[data]:',data);
-        
-      })
+
+    peer.on('connection', (c) => { 
+      
+      if (conn && conn.open) {
+          c.on('open', function() {
+              c.send("Already connected to another client");
+              setTimeout(function() { c.close(); }, 500);
+          });
+          return;
+      }
+
+       
+      c.on('data', function (data) {
+          console.log('[data]:',data);
+          
+      });
+      c.on('close', function () {
+          console.log('["Connection reset<br>Awaiting connection..."]:',);
+          c = null;
+      });
+      
+
+      conn = c;
+      console.log("Connected to: " + c.peer);
     });
 
+  
     peer.on('disconnected', function () {
         console.log('Connection lost. Please reconnect');
 
@@ -46,6 +66,8 @@
         peer._lastServerId = lastPeerId;
         peer.reconnect();
     });
+
+
     const remoteVideo = document.getElementById('remoteVideo');
     const getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia;
     peer.on('call', (call) => {
@@ -58,7 +80,19 @@
       })
     })
     console.log('[firebase]:',firebase);
-    
+
+
+  //   function ready() {
+  //     c.on('data', function (data) {
+  //         console.log('[data]:',data);
+          
+  //     });
+  //     c.on('close', function () {
+  //         console.log('["Connection reset<br>Awaiting connection..."]:',);
+  //         c = null;
+  //     });
+  // }
+
   
   </script>
 
