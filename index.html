@@ -18,9 +18,9 @@
     const getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia;
     const constraints = {
       video: {
-        width: { min: 240, ideal: 320 },
-        height: { min: 200, ideal: 240 },
-        aspectRatio: { ideal: 1.7777777778 },
+        width: 320,
+        height: 240,
+        // aspectRatio: { ideal: 1.7777777778 },
         facingMode: 'environment',
       },
       audio: false
