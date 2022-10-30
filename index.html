@@ -8,30 +8,44 @@
 </head>
 <body>
   <p>From server</p>
+  
   <video id="remoteVideo" autoplay playsinline width="240" height="240"></video>
   <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 
   <script type="text/javascript">
+    const getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia;
+    const peer = new Peer(null, {debug: 2 });
+  
     let receiverid = '';
-
-    const peer = new Peer();
-    console.log('[peer]:',peer);
+    let lastPeerId = null;
 
     peer.on('open', (id) => {
-      console.log('[My peer id is]:', id);
-      
+      if (peer.id === null) {
+          console.log('Received null id from peer open');
+          peer.id = lastPeerId;
+      } else {
+          lastPeerId = peer.id;
+      }
+      console.log('ID: ' + peer.id);
     })
+    peer.on('disconnected', function () {
+        console.log('Connection lost. Please reconnect');
 
-    function connect (id) {
+        // Workaround for peer.reconnect deleting previous id
+        peer.id = lastPeerId;
+        peer._lastServerId = lastPeerId;
+        peer.reconnect();
+    });
+
+    async function  connect (id) {
       receiverid = id;
-      const conn = peer.connect(id);
+      const conn = await peer.connect(id);
       conn.on('open', ()=>{
         conn.send('hi!');
-      })
-    }
-    const getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia;
-    
-    function stream () {
+      });
+
       getUserMedia({video: true, audio: false}, (stream) => {
         const call = peer.call(receiverid, stream);
         console.log('[call]:', call);
@@ -44,14 +58,49 @@
       })
     }
     
+  </script>
 
-    // const conn = peer.connect('another-peers-id');
-    // // on open will be launch when you successfully connect to PeerServer
-    // conn.on('open', function(){
-    //   // here you have conn.id
-    //   conn.send('hi!');
-    // });
+  <script type="text/javascript">
     
+    const firebaseConfig = {
+        apiKey: "AIzaSyADgpMwwDlzBdvJ1IjbBhgsjMRAZO8EuQE",
+        authDomain: "webrtc-app-3cd90.firebaseapp.com",
+        projectId: "webrtc-app-3cd90",
+        storageBucket: "webrtc-app-3cd90.appspot.com",
+        messagingSenderId: "763306657243",
+        appId: "1:763306657243:web:e125f88808cfdc5f3593fe",
+        measurementId: "G-M696NP1J1B"
+    };
+
+    if (!firebase.apps.length) {
+      firebase.initializeApp(firebaseConfig);
+    }
+
+    const firestore = firebase.firestore();
+
+    const peersDoc = firestore.collection('peers');
+
+    peersDoc.doc('receiver').onSnapshot((snapshot) => {
+      const data = snapshot.data();
+      console.log('[snapshot]:',data);
+      connect(data.pid)
+    });
   </script>
 </body>
 </html>
+
+    
+<!-- function stream () {
+  getUserMedia({video: true, audio: false}, (stream) => {
+    const call = peer.call(receiverid, stream);
+    console.log('[call]:', call);
+    call.on('stream', (remoteStream)=> {
+      remoteVideo.srcObject = remoteStream
+    })
+  }, (err) => {
+    console.log('[Failed to get localstrean]:',err);
+    
+  })
+
+  
+} -->
