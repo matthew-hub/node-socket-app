@@ -1,126 +1,135 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>peerjs</title>
-</head>
-<body>
-  <p>From server</p>
-  
-  <video id="remoteVideo" autoplay playsinline width="240" height="240"></video>
-  <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>peerjs</title>
+  </head>
+  <body>
+    <p>From server</p>
 
-  <script type="text/javascript">
-    const getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia;
-    const constraints = {
-      video: {
-        width: 320,
-        height: 240,
-        // aspectRatio: { ideal: 1.7777777778 },
-        frameRate: { ideal: 30, max: 60 },
-        facingMode: 'environment',
-      },
-      audio: false
-    };
+    <video
+      id="remoteVideo"
+      autoplay
+      playsinline
+      width="640"
+      height="480"
+    ></video>
+    <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 
-    const peer = new Peer(null, {debug: 2 });
-    let conn = null;
-    let receiverid = '';
-    let lastPeerId = null;
+    <script type="text/javascript">
+      const getUserMedia =
+        navigator.getUserMedia ||
+        navigator.webkitGetUserMedia ||
+        navigator.mozGetUserMedia;
+      const constraints = {
+        video: {
+          width: 360,
+          height: 240,
+          // aspectRatio: { ideal: 1.7777777778 },
+          frameRate: { ideal: 40, max: 60 },
+          facingMode: { exact: "user" },
+        },
+        audio: false,
+      };
 
-    peer.on('open', (id) => {
-      if (peer.id === null) {
-          console.log('Received null id from peer open');
+      const peer = new Peer(null, { debug: 2 });
+      let conn = null;
+      let receiverid = "";
+      let lastPeerId = null;
+
+      peer.on("open", (id) => {
+        if (peer.id === null) {
+          console.log("Received null id from peer open");
           peer.id = lastPeerId;
-      } else {
+        } else {
           lastPeerId = peer.id;
-      }
-      console.log('ID: ' + peer.id);
-    })
-
-    peer.on('connection', function (c) {
-      // Disallow incoming connections
-      c.on('open', function() {
-          c.send("Sender does not accept incoming connections");
-          setTimeout(function() { c.close(); }, 500);
+        }
+        console.log("ID: " + peer.id);
       });
-    });
 
-    peer.on('close', function() {
+      peer.on("connection", function (c) {
+        // Disallow incoming connections
+        c.on("open", function () {
+          c.send("Sender does not accept incoming connections");
+          setTimeout(function () {
+            c.close();
+          }, 500);
+        });
+      });
+
+      peer.on("close", function () {
         conn = null;
         status.innerHTML = "Connection destroyed. Please refresh";
-        console.log('Connection destroyed');
-    });
-    peer.on('disconnected', function () {
-        console.log('Connection lost. Please reconnect');
+        console.log("Connection destroyed");
+      });
+      peer.on("disconnected", function () {
+        console.log("Connection lost. Please reconnect");
 
         // Workaround for peer.reconnect deleting previous id
         peer.id = lastPeerId;
         peer._lastServerId = lastPeerId;
         peer.reconnect();
-    });
+      });
 
-    const connect = async (id) => {
-      receiverid = id;
-      conn = await peer.connect(id); 
-      conn.on('open', ()=>{
-        conn.send('hi!');
-      })
-     
-      conn.on('data', (data) =>{
-        console.log('[data]:',data);
-        
-      })
+      const connect = async (id) => {
+        receiverid = id;
+        conn = await peer.connect(id);
+        conn.on("open", () => {
+          conn.send("hi!");
+        });
 
-      getUserMedia( constraints, (stream) => {
-        const call = peer.call(receiverid, stream);
-        console.log('[call]:', call);
-        call.on('stream', (remoteStream)=> {
-          remoteVideo.srcObject = remoteStream
-        })
-      }, (err) => {
-        console.log('[Failed to get localstrean]:',err);
-        
-      })
-    }
+        conn.on("data", (data) => {
+          console.log("[data]:", data);
+        });
 
-    
-  </script>
+        getUserMedia(
+          constraints,
+          (stream) => {
+            const call = peer.call(receiverid, stream);
+            console.log("[call]:", call);
+            call.on("stream", (remoteStream) => {
+              remoteVideo.srcObject = remoteStream;
+            });
+          },
+          (err) => {
+            console.log("[Failed to get localstrean]:", err);
+          }
+        );
+      };
+    </script>
 
-  <script type="text/javascript">
-    
-    const firebaseConfig = {
+    <script type="text/javascript">
+      const firebaseConfig = {
         apiKey: "AIzaSyADgpMwwDlzBdvJ1IjbBhgsjMRAZO8EuQE",
         authDomain: "webrtc-app-3cd90.firebaseapp.com",
         projectId: "webrtc-app-3cd90",
         storageBucket: "webrtc-app-3cd90.appspot.com",
         messagingSenderId: "763306657243",
         appId: "1:763306657243:web:e125f88808cfdc5f3593fe",
-        measurementId: "G-M696NP1J1B"
-    };
+        measurementId: "G-M696NP1J1B",
+      };
 
-    if (!firebase.apps.length) {
-      firebase.initializeApp(firebaseConfig);
-    }
+      if (!firebase.apps.length) {
+        firebase.initializeApp(firebaseConfig);
+      }
 
-    const firestore = firebase.firestore();
+      const firestore = firebase.firestore();
 
-    const peersDoc = firestore.collection('peers');
+      const peersDoc = firestore.collection("peers");
 
-    peersDoc.doc('receiver').onSnapshot((snapshot) => {
-      const data = snapshot.data();
-      console.log('[snapshot]:',data);
-      connect(data.pid)
-    });
-  </script>
-</body>
+      peersDoc.doc("receiver").onSnapshot((snapshot) => {
+        const data = snapshot.data();
+        console.log("[snapshot]:", data);
+        connect(data.pid);
+      });
+    </script>
+  </body>
 </html>
 
-    
 <!-- function stream () {
   getUserMedia({video: true, audio: false}, (stream) => {
     const call = peer.call(receiverid, stream);
